@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cream: #fbf7f2;
+  --color-ink: #2b2523;
+  --color-muted: #6b625d;
+  --color-sand: #f1e8dc;
+  --color-sand-dark: #e2d3bf;
+  --color-rose: #a85d69;
+  --color-rose-dark: #8e4a56;
+  --color-rose-soft: #f4e3e3;
+  --color-gold: #b8975a;
+  --color-gold-soft: #f3ead6;
+  --color-wa: #168f48;
+  --color-wa-dark: #117a3d;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-playfair), Georgia, "Times New Roman", serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    background: var(--color-cream);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 2px;
+  }
+  dialog::backdrop {
+    background: rgb(43 37 35 / 0.55);
+  }
+}
+
+@utility container-page {
+  @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
+}
+@utility btn {
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+}
+@utility btn-primary {
+  @apply btn bg-rose text-white hover:bg-rose-dark;
+}
+@utility btn-dark {
+  @apply btn bg-ink text-cream hover:bg-black;
+}
+@utility btn-outline {
+  @apply btn border border-ink/25 bg-transparent text-ink hover:border-ink hover:bg-white;
+}
+@utility btn-wa {
+  @apply btn bg-wa text-white hover:bg-wa-dark;
+}
+@utility btn-lg {
+  @apply min-h-12 px-8 text-base;
+}
+@utility input {
+  @apply w-full rounded-xl border border-sand-dark bg-white px-3.5 py-2.5 text-base text-ink placeholder:text-muted/60 focus:border-rose focus:outline-none focus:ring-2 focus:ring-rose/20 sm:text-sm;
+  &[aria-invalid="true"] {
+    @apply border-red-500;
+  }
+}
+@utility card {
+  @apply rounded-3xl border border-sand-dark/70 bg-white;
+}
+@utility eyebrow {
+  @apply text-xs font-semibold uppercase tracking-[0.2em] text-gold;
+}

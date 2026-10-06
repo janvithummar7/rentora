@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 960" role="img" aria-label="Illustration of ethnic outfits">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3DCD8"/><stop offset="1" stop-color="#F7EBDD"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D9BC83"/><stop offset="1" stop-color="#B8975A"/></linearGradient>
+</defs>
+<rect width="800" height="960" fill="url(#bg)"/>
+<path d="M90 940 V380 a310 310 0 0 1 620 0 V940 Z" fill="#FBF7F2" opacity="0.7"/>
+<path d="M90 940 V380 a310 310 0 0 1 620 0 V940" fill="none" stroke="url(#gold)" stroke-width="4"/>
+<path d="M120 940 V385 a280 280 0 0 1 560 0 V940" fill="none" stroke="#B8975A" stroke-width="1.5" opacity="0.6"/>
+<g stroke="#FBF7F2" stroke-width="5" stroke-linejoin="round">
+<path d="M230 330 L300 305 Q340 345 380 305 L450 330 L440 520 L600 900 L70 900 L230 520 Z" fill="#B76E79"/>
+<path d="M470 420 L520 400 Q555 430 590 400 L640 420 L632 560 L735 900 L400 900 L478 560 Z" fill="#B8975A" opacity="0.92"/>
+<path d="M60 470 L110 450 Q140 480 170 450 L220 470 L214 640 L270 900 L10 900 L66 640 Z" fill="#2B2523" opacity="0.88"/>
+</g>
+<g fill="#B8975A" opacity="0.55">
+<circle cx="150" cy="200" r="5"/><circle cx="640" cy="170" r="4"/><circle cx="700" cy="300" r="6"/><circle cx="90" cy="320" r="3"/><circle cx="420" cy="120" r="4"/>
+</g>
+<path d="M300 430 q40 30 100 0 M280 520 q60 40 140 0" stroke="#FBF7F2" stroke-width="3" fill="none" opacity="0.7"/>
+</svg>
