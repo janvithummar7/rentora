@@ -1,5 +1,6 @@
 "use client";
 
+import { submitAction } from "@/lib/submit-action";
 import { useActionState } from "react";
 import { Loader2 } from "lucide-react";
 import { loginAction, type ActionState } from "@/app/admin/actions";
@@ -52,7 +53,7 @@ export function ConfirmButton({
 export function LoginForm() {
   const [state, action, pending] = useActionState<ActionState, FormData>(loginAction, {});
   return (
-    <form action={action} className="card mx-auto mt-24 w-full max-w-sm space-y-4 p-6">
+    <form action={action} onSubmit={submitAction(action)} className="card mx-auto mt-24 w-full max-w-sm space-y-4 p-6">
       <h1 className="font-serif text-2xl font-semibold">Admin sign in</h1>
       <div className="space-y-1.5">
         <label htmlFor="password" className="text-sm font-medium">

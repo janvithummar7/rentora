@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { fieldErrors, rentalRequestSchema } from "@/lib/validations";
+import { PLATFORM_WHATSAPP } from "@/lib/site";
 import { generateWhatsAppLink, rentalRequestMessage } from "@/lib/whatsapp";
+import { shortId } from "@/lib/utils";
+import { daysBetween } from "@/lib/dates";
 
 export const runtime = "nodejs";
 
@@ -38,20 +41,33 @@ export async function POST(req: Request) {
 
     const { data: listing, error: listingError } = await db
       .from("clothing_listings")
-      .select("id,name,status,available_from,available_to,owner:users!owner_id(whatsapp_number)")
+      .select("id,name,status,available_dates,rent_price")
       .eq("id", input.listingId)
       .maybeSingle();
     if (listingError) throw listingError;
     if (!listing || listing.status !== "approved") {
       return fail("This item is no longer available for rent.", 404);
     }
-    if (
-      (listing.available_from && input.startDate < listing.available_from) ||
-      (listing.available_to && input.endDate > listing.available_to)
-    ) {
-      return fail("The owner has not made this item available for those dates. Please choose different dates.", 400, {
-        fieldErrors: { startDate: "Please choose dates within the item's availability." },
-      });
+    // Every day of the stay must be one the owner marked as available.
+    const available = new Set<string>((listing.available_dates as string[] | null) ?? []);
+    const stay = daysBetween(input.startDate, input.endDate);
+    if (stay.length > 60 || stay.some((d) => !available.has(d))) {
+      const msg = "Some of those dates are not available. Please pick days marked as available.";
+      return fail(msg, 400, { fieldErrors: { startDate: msg } });
+    }
+
+    // Dates taken by a confirmed or completed order are occupied.
+    const { count: clash, error: clashError } = await db
+      .from("rental_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("listing_id", listing.id)
+      .in("status", ["confirmed", "completed"])
+      .lte("start_date", input.endDate)
+      .gte("end_date", input.startDate);
+    if (clashError) throw clashError;
+    if ((clash ?? 0) > 0) {
+      const msg = "Some of those dates have just been booked. Please pick other dates.";
+      return fail(msg, 409, { fieldErrors: { startDate: msg } });
     }
 
     // Database-backed abuse limit per mobile number (works across serverless instances).
@@ -81,16 +97,18 @@ export async function POST(req: Request) {
       .single();
     if (insertError) throw insertError;
 
-    const owner = listing.owner as unknown as { whatsapp_number: string } | null;
-    const whatsappUrl = owner
+    // Requests go to the platform's WhatsApp (not the owner), so the team can add the margin and coordinate.
+    const whatsappUrl = PLATFORM_WHATSAPP
       ? generateWhatsAppLink(
-          owner.whatsapp_number,
+          PLATFORM_WHATSAPP,
           rentalRequestMessage({
             clothingName: listing.name,
+            ref: shortId(listing.id),
             customerName: input.customerName,
             customerMobile: input.customerMobile,
             startDate: input.startDate,
             endDate: input.endDate,
+            listedPrice: listing.rent_price,
             note: input.message,
           }),
         )

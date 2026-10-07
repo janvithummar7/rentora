@@ -1,14 +1,14 @@
 const RENTER_STEPS = [
   ["Find your outfit", "Browse cholis, sarees, kurtis, lehengas and more near you."],
   ["Send rental request", "Pick your dates and share your name and mobile number."],
-  ["Connect with owner on WhatsApp", "WhatsApp opens with your request already written."],
-  ["Finalize rental", "Agree on pickup and payment directly with the owner."],
+  ["Confirm with us on WhatsApp", "WhatsApp opens with your request already written. We confirm availability and the final price."],
+  ["Finalize rental", "We arrange pickup and payment with you. Enjoy your outfit!"],
 ];
 
 const OWNER_STEPS = [
   ["Upload your clothes", "Add a few photos, the size and your rent price."],
   ["Get approved", "Our team reviews your listing before it goes live."],
-  ["Receive rental requests", "Interested renters contact you on WhatsApp."],
+  ["Receive rental requests", "We handle the renters and contact you to confirm each booking."],
   ["Earn from your clothes", "Turn outfits you rarely wear into extra income."],
 ];
 

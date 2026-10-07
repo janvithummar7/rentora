@@ -34,14 +34,6 @@ export function shortId(id: string): string {
   return id.slice(0, 8).toUpperCase();
 }
 
-export function availabilityLabel(from: string | null, to: string | null): string {
-  const today = todayISO();
-  if (to && to < today) return "No longer available";
-  if (from && from > today) return `Available from ${formatDate(from)}`;
-  if (to) return `Available until ${formatDate(to)}`;
-  return "Available now";
-}
-
 export function parseRange(value: string | undefined): { min?: number; max?: number } {
   if (!value) return {};
   const m = /^(\d*)-(\d*)$/.exec(value);

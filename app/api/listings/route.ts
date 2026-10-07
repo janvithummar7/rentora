@@ -3,7 +3,10 @@ import { NextResponse } from "next/server";
 import { getAdminClient, STORAGE_BUCKET } from "@/lib/supabase";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { fieldErrors, listingSchema } from "@/lib/validations";
-import { ALLOWED_IMAGE_TYPES, MAX_IMAGES, MAX_IMAGE_BYTES } from "@/lib/categories";
+import { getCurrentUser, newClaimToken } from "@/lib/account-auth";
+import { getDefaultMargin } from "@/lib/margin";
+import { listingPrices } from "@/lib/pricing";
+import { ALLOWED_IMAGE_TYPES, MAX_IMAGES, MAX_IMAGE_BYTES, categoryName } from "@/lib/categories";
 
 export const runtime = "nodejs";
 
@@ -87,7 +90,7 @@ export async function POST(req: Request) {
     const { count, error: countError } = await db
       .from("users")
       .select("id", { count: "exact", head: true })
-      .eq("mobile", input.mobile)
+      .eq("mobile", input.whatsapp)
       .gte("created_at", since);
     if (countError) throw countError;
     if ((count ?? 0) >= 5) return fail("Too many listings from this number today. Please try again tomorrow.", 429);
@@ -106,39 +109,55 @@ export async function POST(req: Request) {
       });
     }
 
-    // A new owner row per submission: without accounts, reusing/updating an existing row by
-    // mobile number would let anyone redirect another owner's listings to their own number.
+    // A new owner row per submission: reusing/updating an existing row by mobile number
+    // would let anyone redirect another owner's listings to their own number.
+    // Signed-in owners get the row linked to their account right away; anonymous posters get a
+    // one-time claim token so they can create an account afterwards and take ownership.
+    const account = await getCurrentUser();
+    const claim = account ? null : newClaimToken();
     const { data: owner, error: ownerError } = await db
       .from("users")
       .insert({
         name: input.ownerName,
-        mobile: input.mobile,
-        email: input.email ?? null,
-        whatsapp_number: input.whatsapp ?? input.mobile,
+        mobile: input.whatsapp,
+        whatsapp_number: input.whatsapp,
         city: input.city,
         area: input.area,
+        auth_user_id: account?.id ?? null,
+        claim_token_hash: claim?.hash ?? null,
+        claim_expires_at: claim?.expiresAt ?? null,
       })
       .select("id")
       .single();
     if (ownerError) throw ownerError;
     ownerId = owner.id;
 
+    // The owner's price is stored privately; customers see it plus the platform margin.
+    const margin = getDefaultMargin();
+    const ownerSale = input.forSale ? (input.salePrice ?? null) : null;
+    const prices = listingPrices(input.rentPrice, ownerSale, margin);
+    const dates = input.availableDates;
     const { error: listingError } = await db.from("clothing_listings").insert({
       id: listingId,
       owner_id: owner.id,
-      name: input.name,
+      // Generated title; admins can edit it later.
+      name: `${categoryName(input.category)} (Size ${input.sizes.join(", ")})`,
       category: input.category,
-      description: input.description,
-      size: input.size,
-      color: input.color,
-      brand: input.brand ?? null,
-      condition: input.condition,
-      rent_price: input.rentPrice,
-      security_deposit: input.securityDeposit,
+      description: "",
       location: `${input.area}, ${input.city}`,
       city: input.city,
-      available_from: input.availableFrom ?? null,
-      available_to: input.availableTo ?? null,
+      size: input.sizes.join(", "),
+      sizes: input.sizes,
+      owner_rent_price: input.rentPrice,
+      owner_sale_price: ownerSale,
+      margin_percent: margin,
+      rent_price: prices.rent_price,
+      security_deposit: 0,
+      for_sale: input.forSale,
+      sale_price: prices.sale_price,
+      available_dates: dates,
+      available_from: dates[0],
+      available_to: dates[dates.length - 1],
       status: "pending",
     });
     if (listingError) throw listingError;
@@ -146,7 +165,13 @@ export async function POST(req: Request) {
     const { error: imagesError } = await db.from("clothing_images").insert(imageRows);
     if (imagesError) throw imagesError;
 
-    return NextResponse.json({ ok: true, id: listingId });
+    return NextResponse.json({
+      ok: true,
+      id: listingId,
+      claimToken: claim?.token ?? null,
+      signedIn: Boolean(account),
+      forSale: input.forSale,
+    });
   } catch (err) {
     console.error("listings POST failed", err);
     // Roll back anything half-written.

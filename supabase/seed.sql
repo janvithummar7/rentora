@@ -1,4 +1,4 @@
-﻿-- =====================================================================
+-- =====================================================================
 -- SEED / SAMPLE DATA -- FOR DEVELOPMENT ONLY
 -- Every row is flagged is_seed = true. Remove it all before launch with:
 --     delete from public.clothing_listings where is_seed;
@@ -16,10 +16,11 @@ insert into public.users (id, name, mobile, whatsapp_number, city, area, is_seed
 on conflict (id) do nothing;
 
 insert into public.clothing_listings
-  (owner_id, name, category, description, size, color, brand, condition, rent_price, security_deposit, location, city, available_from, available_to, status, is_seed)
-select o.id, v.name, v.category, v.description, v.size, v.color, v.brand, v.condition,
+  (owner_id, name, category, description, size, sizes, color, brand, condition, rent_price, security_deposit, location, city, available_from, available_to, available_dates, status, is_seed)
+select o.id, v.name, v.category, v.description, v.size, array[v.size], v.color, v.brand, v.condition,
        v.rent_price, v.security_deposit, v.area || ', ' || v.city, v.city,
-       current_date, current_date + 365, 'approved', true
+       current_date, current_date + 365,
+       array(select (current_date + g)::date from generate_series(0, 365) g), 'approved', true
 from (values
   -- Choli x5
   ('11111111-1111-4111-8111-000000000001', 'Designer Red Choli',        'choli', 'Heavy mirror-work red choli with embroidered border. Perfect for Navratri and garba nights.', 'M', 'Red',       'Kalki',        'Like new', 1500, 3000, 'Satellite', 'Ahmedabad'),
@@ -58,3 +59,9 @@ select l.id, '/placeholders/' || l.category || '-2.svg', false
 from public.clothing_listings l
 where l.is_seed and not exists (
   select 1 from public.clothing_images i where i.listing_id = l.id and not i.is_primary);
+
+-- Sample "also for sale" items (seed only)
+update public.clothing_listings set for_sale = true, sale_price = 6500
+  where is_seed and name = 'Designer Red Choli';
+update public.clothing_listings set for_sale = true, sale_price = 4200
+  where is_seed and name = 'Black Cocktail Dress';

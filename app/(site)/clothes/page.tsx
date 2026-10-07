@@ -6,7 +6,7 @@ import { BrowseView, readParams } from "@/components/BrowseView";
 export const metadata: Metadata = {
   title: "Browse Clothes for Rent",
   description:
-    "Browse cholis, sarees, kurtis, lehengas, gowns and dresses available for rent. Send a request and chat with the owner on WhatsApp.",
+    "Browse cholis, sarees, kurtis, lehengas, gowns and dresses available for rent. Send a request and confirm with our team on WhatsApp.",
   alternates: { canonical: "/clothes" },
 };
 

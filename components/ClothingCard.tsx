@@ -5,11 +5,12 @@ import { RentalRequestDialog } from "@/components/RentalRequestDialog";
 import { WhatsAppIcon } from "@/components/WhatsAppButton";
 import { categoryName } from "@/lib/categories";
 import { primaryImage, type PublicListing } from "@/lib/data";
-import { availabilityLabel, formatINR } from "@/lib/utils";
+import { availabilityLabel, upcoming } from "@/lib/dates";
+import { formatINR } from "@/lib/utils";
 
 export function ClothingCard({ listing, priority = false }: { listing: PublicListing; priority?: boolean }) {
   const image = primaryImage(listing);
-  const availability = availabilityLabel(listing.available_from, listing.available_to);
+  const availability = availabilityLabel(listing.available_dates, listing.booked_dates);
   const href = `/clothes/${listing.id}`;
 
   return (
@@ -39,34 +40,43 @@ export function ClothingCard({ listing, priority = false }: { listing: PublicLis
           </Link>
         </h3>
 
-        <p className="flex items-center gap-1 text-sm text-muted">
-          <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          <span className="truncate">{listing.location}</span>
-        </p>
+        {listing.location && (
+          <p className="flex items-center gap-1 text-sm text-muted">
+            <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span className="truncate">{listing.location}</span>
+          </p>
+        )}
 
         <p className="text-sm text-muted">
-          Size <span className="font-medium text-ink">{listing.size}</span>
-          <span aria-hidden="true"> · </span>
-          <span className="text-wa">{availability}</span>
+          {listing.sizes?.length > 1 ? "Sizes" : "Size"}{" "}
+          <span className="font-medium text-ink">{listing.sizes?.length ? listing.sizes.join(", ") : listing.size}</span>
         </p>
+        <p className="text-sm font-medium text-wa">{availability}</p>
+        {upcoming(listing.requested_dates).length > 0 && (
+          <p className="w-fit rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-900">
+            Requested by others · you can request too
+          </p>
+        )}
 
         <div>
           <p className="text-lg font-semibold">
             {formatINR(listing.rent_price)} <span className="text-sm font-normal text-muted">/ day</span>
           </p>
+          {listing.for_sale && listing.sale_price ? (
+            <p className="text-xs font-medium text-[#7a5f2c]">Also for sale: {formatINR(listing.sale_price)}</p>
+          ) : null}
           {listing.security_deposit > 0 && (
             <p className="text-xs text-muted">Security deposit {formatINR(listing.security_deposit)}</p>
           )}
         </div>
 
-        <p className="text-xs text-muted">Listed by {listing.owner_name}</p>
-
         <div className="mt-auto flex flex-col gap-2 pt-2 min-[420px]:flex-row">
           <RentalRequestDialog
             listingId={listing.id}
             listingName={listing.name}
-            availableFrom={listing.available_from}
-            availableTo={listing.available_to}
+            availableDates={listing.available_dates}
+            bookedDates={listing.booked_dates}
+            requestedDates={listing.requested_dates}
             label="Send Request"
             className="flex-1 !px-3"
           />
@@ -74,7 +84,7 @@ export function ClothingCard({ listing, priority = false }: { listing: PublicLis
             href={`/api/whatsapp/${listing.id}`}
             target="_blank"
             rel="noopener noreferrer nofollow"
-            aria-label={`WhatsApp the owner about ${listing.name}`}
+            aria-label={`Ask us about ${listing.name} on WhatsApp`}
             className="btn-wa !px-3 min-[420px]:!px-4"
           >
             <WhatsAppIcon className="h-5 w-5" />

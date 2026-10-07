@@ -1,4 +1,4 @@
-﻿-- Row Level Security, public view and storage bucket
+-- Row Level Security, public view and storage bucket
 --
 -- Model: the website reads public data with the anon key (restricted by RLS and the
 -- public_listings view) and performs every write, plus anything touching owner phone

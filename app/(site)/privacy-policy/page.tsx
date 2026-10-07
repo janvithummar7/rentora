@@ -21,9 +21,8 @@ export default function PrivacyPage() {
       </ul>
       <h2>How we use it</h2>
       <p>
-        {SITE_NAME} uses this information to show listings, pass rental requests to owners, let our team review
-        listings and contact you about a request. Owners&apos; phone numbers are not shown publicly. A renter&apos;s
-        details are shared with the owner of the item they request, through WhatsApp.
+        {SITE_NAME} uses this information to show listings, handle rental requests, let our team review
+        listings and contact you about a request. Owners&apos; phone numbers are never shown publicly. Renters&apos; contact details are used by our team to coordinate the rental and are not shown to other users.
       </p>
       <h2>Storage and security</h2>
       <p>

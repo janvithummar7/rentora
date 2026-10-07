@@ -8,8 +8,9 @@ import { cn } from "@/lib/utils";
 type Props = {
   listingId: string;
   listingName: string;
-  availableFrom: string | null;
-  availableTo: string | null;
+  availableDates: string[];
+  bookedDates?: string[];
+  requestedDates?: string[];
   label?: string;
   className?: string;
 };

@@ -16,9 +16,8 @@ export default function TermsPage() {
       </p>
       <h2>Our role</h2>
       <p>
-        {SITE_NAME} is a listing and introduction service. We connect renters and owners. Rental agreements,
-        payment, deposits, pickup and returns are arranged directly between renter and owner. We are not a party to
-        them and do not process payments.
+        {SITE_NAME} is a rental coordination service. Owners list items and set the price they want to receive; the price shown to renters includes our service fee. Our team confirms availability and arranges pickup, payment and returns. This website does
+        not process online payments.
       </p>
       <h2>Owners</h2>
       <ul>

@@ -1,4 +1,4 @@
-﻿import { z, type ZodError } from "zod";
+import { z, type ZodError } from "zod";
 import { CATEGORY_SLUGS, CONDITIONS, SIZES } from "@/lib/categories";
 import { normalizeIndianMobile } from "@/lib/whatsapp";
 import { todayISO } from "@/lib/utils";
@@ -32,7 +32,7 @@ const text = (label: string, min: number, max: number, multiline = false) =>
     .pipe(
       z
         .string()
-        .min(min, min <= 1 ? `Please enter ${label}.` : `${label[0].toUpperCase()}${label.slice(1)} is too short.`)
+        .min(min, `Please enter ${label}.`)
         .max(max, `${label[0].toUpperCase()}${label.slice(1)} is too long (max ${max} characters).`),
     );
 
@@ -64,14 +64,6 @@ const dateString = (label: string) =>
   z
     .string({ required_error: `Please select ${label}.`, invalid_type_error: `Please select ${label}.` })
     .regex(/^\d{4}-\d{2}-\d{2}$/, `Please select ${label}.`);
-
-const optionalDate = z.preprocess(
-  (v) => (v === "" || v == null ? undefined : v),
-  z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Please enter a valid date.")
-    .optional(),
-);
 
 const money = (label: string, min: number, max: number) =>
   z.preprocess(
@@ -108,37 +100,142 @@ export type RentalRequestInput = z.infer<typeof rentalRequestSchema>;
 
 /* --------------------------------- Listing --------------------------------- */
 
-export const ownerSchema = z.object({
-  ownerName: text("your name", 2, 60),
-  mobile: mobileSchema,
-  whatsapp: optionalMobile,
-  email: optionalEmail,
-  city: text("your city", 2, 60),
-  area: text("your area", 2, 80),
-});
+const availableDates = z.preprocess(
+  (v) => (typeof v === "string" ? v.split(",").map((x) => x.trim()).filter(Boolean) : v),
+  z
+    .array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Please enter valid dates."), {
+      required_error: "Please select at least one available date.",
+    })
+    .min(1, "Please select at least one available date.")
+    .max(366, "Please select fewer dates.")
+    .transform((a) => [...new Set(a)].sort()),
+);
 
-export const clothingSchema = z.object({
-  name: text("a clothing name", 3, 80),
-  category: z.enum(CATEGORY_SLUGS, { errorMap: () => ({ message: "Please choose a category." }) }),
-  description: text("a short description", 10, 1000, true),
-  size: z.enum(SIZES, { errorMap: () => ({ message: "Please choose a size." }) }),
-  color: text("a colour", 2, 40),
-  brand: optionalText(60),
-  condition: z.enum(CONDITIONS, { errorMap: () => ({ message: "Please choose the condition." }) }),
-  rentPrice: money("the rent price", 1, 100000),
-  securityDeposit: z.preprocess((v) => (v === "" || v == null ? 0 : v), money("the security deposit (0 if none)", 0, 500000)),
-  availableFrom: optionalDate,
-  availableTo: optionalDate,
-});
+const categoryField = z.enum(CATEGORY_SLUGS, { errorMap: () => ({ message: "Please choose the type of clothing." }) });
+/** One or more sizes, submitted as a comma-separated string (e.g. "M,L"). Returned in SIZES order. */
+const sizesField = z.preprocess(
+  (v) => (typeof v === "string" ? v.split(",").map((x) => x.trim()).filter(Boolean) : v),
+  z
+    .array(z.enum(SIZES, { errorMap: () => ({ message: "Please choose a valid size." }) }), {
+      required_error: "Please choose at least one size.",
+    })
+    .min(1, "Please choose at least one size.")
+    .transform((a) => SIZES.filter((s) => a.includes(s))),
+);
 
-const checkDates = (v: { availableFrom?: string; availableTo?: string }, ctx: z.RefinementCtx) => {
-  if (v.availableFrom && v.availableTo && v.availableTo < v.availableFrom) {
-    ctx.addIssue({ code: "custom", path: ["availableTo"], message: "'Available To' must be after 'Available From'." });
+/** "Also sell this": a chip that, when on, requires a selling price. */
+const forSaleField = z.preprocess((v) => v === "1" || v === "on" || v === "true" || v === true, z.boolean());
+const salePriceField = z.preprocess(
+  (v) => (typeof v === "string" ? (v.trim() === "" ? undefined : Number(v.replace(/,/g, ""))) : v),
+  z
+    .number({ invalid_type_error: "Please enter the selling price." })
+    .int("Please enter the selling price as a whole number.")
+    .min(1, "Please enter the selling price.")
+    .max(1_000_000, "Selling price is too high.")
+    .optional(),
+);
+const checkSale = (v: { forSale: boolean; salePrice?: number }, ctx: z.RefinementCtx) => {
+  if (v.forSale && !v.salePrice) {
+    ctx.addIssue({ code: "custom", path: ["salePrice"], message: "Please enter the selling price." });
   }
 };
 
-export const listingSchema = ownerSchema.merge(clothingSchema).superRefine(checkDates);
+/** Public "post your clothes" form: just the essentials. */
+export const listingSchema = z
+  .object({
+    ownerName: text("your name", 2, 60),
+    whatsapp: mobileSchema,
+    city: text("your city", 2, 60),
+    area: text("your area", 2, 80),
+    category: categoryField,
+    sizes: sizesField,
+    rentPrice: money("the rent price", 1, 100000),
+    forSale: forSaleField,
+    salePrice: salePriceField,
+    availableDates,
+  })
+  .superRefine((v, ctx) => {
+    checkSale(v, ctx);
+    if (v.availableDates.some((d) => d < todayISO())) {
+      ctx.addIssue({ code: "custom", path: ["availableDates"], message: "Available dates cannot be in the past." });
+    }
+  });
 export type ListingInput = z.infer<typeof listingSchema>;
+
+/** Owner editing their own listing from the account area (past dates allowed: they may be kept). */
+export const ownerEditSchema = z
+  .object({
+    name: text("a title", 3, 80),
+    whatsapp: mobileSchema,
+    city: text("your city", 2, 60),
+    area: text("your area", 2, 80),
+    description: optionalText(1000, true),
+    sizes: sizesField,
+    rentPrice: money("the rent price", 1, 100000),
+    forSale: forSaleField,
+    salePrice: salePriceField,
+    availableDates,
+  })
+  .superRefine(checkSale);
+export type OwnerEditInput = z.infer<typeof ownerEditSchema>;
+
+/** Admin editor: every field, all but the essentials optional. */
+export const adminListingSchema = z
+  .object({
+  ownerName: text("the owner name", 2, 60),
+  mobile: mobileSchema,
+  whatsapp: optionalMobile,
+  email: optionalEmail,
+  city: optionalText(60),
+  area: optionalText(80),
+  name: text("a clothing name", 3, 80),
+  category: categoryField,
+  description: optionalText(1000, true),
+  sizes: sizesField,
+  color: optionalText(40),
+  brand: optionalText(60),
+  condition: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined)
+    .pipe(z.enum(CONDITIONS).optional()),
+  rentPrice: money("the rent price", 1, 100000),
+  securityDeposit: z.preprocess((v) => (v === "" || v == null ? 0 : v), money("the security deposit (0 if none)", 0, 500000)),
+  forSale: forSaleField,
+  salePrice: salePriceField,
+  marginPercent: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() !== "" ? Number(v) : v),
+    z
+      .number({ required_error: "Please enter the margin (0 for none).", invalid_type_error: "Please enter the margin (0 for none)." })
+      .min(0, "Margin cannot be negative.")
+      .max(300, "Margin is too high."),
+  ),
+  availableDates,
+  })
+  .superRefine(checkSale);
+export type AdminListingInput = z.infer<typeof adminListingSchema>;
+
+/* --------------------------------- Accounts --------------------------------- */
+
+const emailField = z
+  .string({ required_error: "Please enter your email." })
+  .trim()
+  .toLowerCase()
+  .email("Please enter a valid email address.")
+  .max(120);
+
+export const loginSchema = z.object({
+  email: emailField,
+  password: z.string({ required_error: "Please enter your password." }).min(1, "Please enter your password.").max(200),
+});
+
+export const signupSchema = z.object({
+  email: emailField,
+  password: z
+    .string({ required_error: "Please choose a password." })
+    .min(8, "Password must be at least 8 characters.")
+    .max(72, "Password is too long (max 72 characters)."),
+});
 
 /* ------------------------------- Admin helpers ------------------------------- */
 

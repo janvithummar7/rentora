@@ -18,7 +18,7 @@ export const metadata = {
 const WHY = [
   { icon: BadgeIndianRupee, title: "Affordable rentals", text: "Wear a stunning outfit for a fraction of the price of buying." },
   { icon: Gem, title: "Wide variety", text: "Choli, saree, lehenga, kurti, gown and more in one place." },
-  { icon: Sparkles, title: "Direct owner connection", text: "No middlemen. You speak to the owner yourself." },
+  { icon: Sparkles, title: "We handle everything", text: "One team confirms availability, price, pickup and return for you." },
   { icon: MessageCircle, title: "Easy WhatsApp communication", text: "Your request opens straight in WhatsApp." },
   { icon: Zap, title: "Simple rental process", text: "No sign-ups, no payments on the site. Just request and chat." },
 ];
@@ -54,7 +54,7 @@ export default async function HomePage() {
                 PUT YOUR CLOTHES FOR RENT
               </Link>
             </div>
-            <p className="mt-5 text-sm text-muted">Free to browse · No online payment · Chat with owners on WhatsApp</p>
+            <p className="mt-5 text-sm text-muted">Free to browse · No online payment · Confirm on WhatsApp</p>
           </div>
           <div className="relative mx-auto aspect-[5/6] w-full max-w-sm overflow-hidden rounded-t-[999px] rounded-b-3xl border border-gold/40 shadow-xl shadow-ink/10 lg:max-w-md">
             <Image

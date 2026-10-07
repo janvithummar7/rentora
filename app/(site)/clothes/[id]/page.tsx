@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache, Suspense } from "react";
 import { BrowseSkeleton } from "@/components/BrowseSkeleton";
-import { MapPin, ShieldCheck, UserRound } from "lucide-react";
+import { MapPin, ShieldCheck } from "lucide-react";
 import { BrowseView, readParams } from "@/components/BrowseView";
 import { ImageGallery } from "@/components/ImageGallery";
 import { RentalRequestDialog } from "@/components/RentalRequestDialog";
@@ -11,7 +11,8 @@ import { WhatsAppIcon } from "@/components/WhatsAppButton";
 import { categoryName, getCategory } from "@/lib/categories";
 import { getListing, primaryImage } from "@/lib/data";
 import { SITE_URL } from "@/lib/site";
-import { availabilityLabel, formatINR } from "@/lib/utils";
+import { availabilityLabel, formatRanges, upcoming } from "@/lib/dates";
+import { formatINR } from "@/lib/utils";
 
 /**
  * /clothes/<slug> and /clothes/<uuid> share one route: a category slug lists that category,
@@ -32,16 +33,16 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   if (category) {
     return {
       title: `${category.name} for Rent`,
-      description: `Rent beautiful ${category.name.toLowerCase()} outfits from owners near you. Send a request and chat on WhatsApp.`,
+      description: `Rent beautiful ${category.name.toLowerCase()} outfits. Send a request and confirm with our team on WhatsApp.`,
       alternates: { canonical: `/clothes/${category.slug}` },
     };
   }
   const listing = await loadListing(id).catch(() => null);
   if (!listing) return { title: "Clothing not found", robots: { index: false } };
-  const title = `${listing.name} for Rent in ${listing.city}`;
-  const description = `Rent ${listing.name} (${categoryName(listing.category)}, size ${listing.size}) in ${listing.location} for ${formatINR(
-    listing.rent_price,
-  )} per day. ${listing.description}`.slice(0, 200);
+  const title = listing.city ? `${listing.name} for Rent in ${listing.city}` : `${listing.name} for Rent`;
+  const description = `Rent ${listing.name} (${categoryName(listing.category)}, size ${listing.size})${
+    listing.location ? ` in ${listing.location}` : ""
+  } for ${formatINR(listing.rent_price)} per day. ${listing.description ?? ""}`.slice(0, 200);
   const image = primaryImage(listing);
   return {
     title,
@@ -80,10 +81,15 @@ export default async function ClothesDetailOrCategory({
   const listing = await loadListing(id);
   if (!listing) notFound();
 
-  const availability = availabilityLabel(listing.available_from, listing.available_to);
+  const availableDays = upcoming(listing.available_dates);
+  const bookedDays = upcoming(listing.booked_dates);
+  const requestedDays = upcoming(listing.requested_dates);
+  const availability = availableDays.length
+    ? `Available: ${formatRanges(availableDays, 5)}`
+    : availabilityLabel(listing.available_dates, listing.booked_dates);
   const details: [string, string | null][] = [
     ["Category", categoryName(listing.category)],
-    ["Size", listing.size],
+    [listing.sizes?.length > 1 ? "Sizes" : "Size", listing.sizes?.length ? listing.sizes.join(", ") : listing.size],
     ["Color", listing.color],
     ["Brand", listing.brand],
     ["Condition", listing.condition],
@@ -131,9 +137,11 @@ export default async function ClothesDetailOrCategory({
           <div>
             <p className="eyebrow">{categoryName(listing.category)}</p>
             <h1 className="mt-1 font-serif text-3xl font-semibold sm:text-4xl">{listing.name}</h1>
-            <p className="mt-2 flex items-center gap-1.5 text-muted">
-              <MapPin className="h-4 w-4" aria-hidden="true" /> {listing.location}
-            </p>
+            {listing.location && (
+              <p className="mt-2 flex items-center gap-1.5 text-muted">
+                <MapPin className="h-4 w-4" aria-hidden="true" /> {listing.location}
+              </p>
+            )}
           </div>
 
           <div className="card p-5">
@@ -146,12 +154,22 @@ export default async function ClothesDetailOrCategory({
                 : "No security deposit"}
             </p>
             <p className="mt-2 text-sm font-medium text-wa">{availability}</p>
+            {requestedDays.length > 0 && (
+              <p className="mt-1 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                Requested by others (not confirmed yet): {formatRanges(requestedDays, 4)}. You can request these days
+                too.
+              </p>
+            )}
+            {bookedDays.length > 0 && (
+              <p className="mt-1 text-sm text-muted">Already booked: {formatRanges(bookedDays, 4)}</p>
+            )}
             <div className="mt-5 flex flex-col gap-3 sm:flex-row">
               <RentalRequestDialog
                 listingId={listing.id}
                 listingName={listing.name}
-                availableFrom={listing.available_from}
-                availableTo={listing.available_to}
+                availableDates={listing.available_dates}
+                bookedDates={listing.booked_dates}
+                requestedDates={listing.requested_dates}
                 className="btn-lg flex-1"
               />
               <a
@@ -160,17 +178,36 @@ export default async function ClothesDetailOrCategory({
                 rel="noopener noreferrer nofollow"
                 className="btn-wa btn-lg"
               >
-                <WhatsAppIcon className="h-5 w-5" /> WhatsApp Owner
+                <WhatsAppIcon className="h-5 w-5" /> WhatsApp Us
               </a>
             </div>
           </div>
 
-          <section aria-labelledby="about-heading">
-            <h2 id="about-heading" className="font-serif text-xl font-semibold">
-              About this outfit
-            </h2>
-            <p className="mt-2 whitespace-pre-line leading-relaxed text-ink/85">{listing.description}</p>
-          </section>
+          {listing.for_sale && listing.sale_price ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-gold/50 bg-gold-soft p-5">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-[#7a5f2c]">Also for sale</p>
+                <p className="text-2xl font-semibold">{formatINR(listing.sale_price)}</p>
+              </div>
+              <a
+                href={`/api/whatsapp/${listing.id}?intent=buy`}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                className="btn-dark"
+              >
+                <WhatsAppIcon className="h-5 w-5" /> Ask to buy
+              </a>
+            </div>
+          ) : null}
+
+          {listing.description && (
+            <section aria-labelledby="about-heading">
+              <h2 id="about-heading" className="font-serif text-xl font-semibold">
+                About this outfit
+              </h2>
+              <p className="mt-2 whitespace-pre-line leading-relaxed text-ink/85">{listing.description}</p>
+            </section>
+          )}
 
           <dl className="grid grid-cols-2 gap-x-6 gap-y-4 rounded-3xl border border-sand-dark/70 bg-white p-5 text-sm">
             {details
@@ -182,23 +219,10 @@ export default async function ClothesDetailOrCategory({
                 </div>
               ))}
           </dl>
-
-          <section aria-labelledby="owner-heading" className="card flex items-center gap-4 p-5">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-rose-soft text-rose-dark">
-              <UserRound className="h-6 w-6" aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <h2 id="owner-heading" className="text-xs font-semibold uppercase tracking-wider text-muted">
-                Listed by
-              </h2>
-              <p className="truncate font-semibold">{listing.owner_name}</p>
-              <p className="truncate text-sm text-muted">{listing.location}</p>
-            </div>
-          </section>
           <p className="flex items-start gap-2 text-xs text-muted">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-gold" aria-hidden="true" />
-            The owner&apos;s phone number is kept private. Send a request or tap WhatsApp Owner to connect. Rentals
-            and payment are arranged directly between you and the owner.
+            Send a request and our team will confirm availability and the final price with you on WhatsApp, then
+            arrange pickup and payment.
           </p>
         </div>
       </div>

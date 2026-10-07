@@ -1,20 +1,19 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ListingActions } from "@/components/admin/ListingActions";
+import { RequestCard } from "@/components/admin/RequestCard";
 import { StatusBadge } from "@/components/admin/AdminBits";
-import { WhatsAppIcon } from "@/components/WhatsAppButton";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getAdminCounts, getAdminListings, getAdminRequests } from "@/lib/admin-data";
 import { categoryName } from "@/lib/categories";
-import { adminToCustomerMessage, generateWhatsAppLink } from "@/lib/whatsapp";
-import { formatDate, formatDateTime, formatINR } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils";
 
 export default async function AdminDashboard() {
   await requireAdmin();
   const [counts, pending, requests] = await Promise.all([
     getAdminCounts(),
     getAdminListings("pending"),
-    getAdminRequests("new"),
+    getAdminRequests(),
   ]);
 
   const stats = [
@@ -40,6 +39,31 @@ export default async function AdminDashboard() {
       </ul>
 
       <section>
+        <div className="flex items-center justify-between">
+          <h2 className="font-serif text-xl font-semibold">
+            Rental requests
+            {counts.newRequests > 0 && (
+              <span className="ml-2 rounded-full bg-rose px-2.5 py-0.5 align-middle text-xs font-semibold text-white">
+                {counts.newRequests} new
+              </span>
+            )}
+          </h2>
+          <Link href="/admin/requests" className="text-sm font-semibold text-rose hover:underline">
+            All requests
+          </Link>
+        </div>
+        {requests.length === 0 ? (
+          <p className="mt-3 text-sm text-muted">No requests yet.</p>
+        ) : (
+          <ul className="mt-4 space-y-4">
+            {requests.slice(0, 10).map((r) => (
+              <RequestCard key={r.id} r={r} />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section>
         <h2 className="font-serif text-xl font-semibold">Listings waiting for approval</h2>
         {pending.length === 0 ? (
           <p className="mt-3 text-sm text-muted">Nothing to review right now.</p>
@@ -60,7 +84,7 @@ export default async function AdminDashboard() {
                       <StatusBadge status={l.status} />
                     </div>
                     <p className="text-sm text-muted">
-                      {categoryName(l.category)} · Size {l.size} · {formatINR(l.rent_price)}/day · {l.location} ·
+                      {categoryName(l.category)} · Size {l.size} · {l.location ? `${l.location} · ` : ""}
                       Submitted {formatDateTime(l.created_at)}
                     </p>
                     <p className="text-sm">
@@ -72,6 +96,9 @@ export default async function AdminDashboard() {
                       ownerWhatsapp={l.owner.whatsapp_number}
                       ownerName={l.owner.name}
                       listingName={l.name}
+                    ownerRent={l.owner_rent_price}
+                    ownerSale={l.owner_sale_price}
+                    margin={l.margin_percent}
                     />
                   </div>
                 </li>
@@ -81,48 +108,6 @@ export default async function AdminDashboard() {
         )}
       </section>
 
-      <section>
-        <div className="flex items-center justify-between">
-          <h2 className="font-serif text-xl font-semibold">New rental requests</h2>
-          <Link href="/admin/requests" className="text-sm font-semibold text-rose hover:underline">
-            All requests
-          </Link>
-        </div>
-        {requests.length === 0 ? (
-          <p className="mt-3 text-sm text-muted">No new requests.</p>
-        ) : (
-          <ul className="mt-4 space-y-3">
-            {requests.slice(0, 8).map((r) => (
-              <li key={r.id} className="card flex flex-wrap items-center justify-between gap-3 p-4">
-                <div className="text-sm">
-                  <p className="font-semibold">
-                    {r.customer_name} · {r.customer_mobile}
-                  </p>
-                  <p className="text-muted">
-                    {r.listing?.name ?? "Deleted listing"} · {formatDate(r.start_date)} – {formatDate(r.end_date)}
-                  </p>
-                </div>
-                <a
-                  href={generateWhatsAppLink(
-                    r.customer_mobile,
-                    adminToCustomerMessage({
-                      customerName: r.customer_name,
-                      clothingName: r.listing?.name ?? "your requested outfit",
-                      startDate: r.start_date,
-                      endDate: r.end_date,
-                    }),
-                  )}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-wa !min-h-9 !px-4 text-xs"
-                >
-                  <WhatsAppIcon className="h-4 w-4" /> Contact Customer on WhatsApp
-                </a>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { submitAction } from "@/lib/submit-action";
 import { useActionState } from "react";
 import { Loader2 } from "lucide-react";
 import { updateListing, type ActionState } from "@/app/admin/actions";
@@ -19,11 +20,11 @@ export function ListingEditForm({
 }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(updateListing, {});
   return (
-    <form action={action} noValidate className="space-y-8">
+    <form action={action} onSubmit={submitAction(action)} noValidate className="space-y-8">
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="ownerId" value={ownerId} />
 
-      <ListingFields errors={state.errors ?? {}} defaults={defaults} minDate="2000-01-01" />
+      <ListingFields errors={state.errors ?? {}} defaults={defaults} />
 
       <div className="max-w-xs space-y-1.5">
         <label htmlFor="status" className="text-sm font-medium">

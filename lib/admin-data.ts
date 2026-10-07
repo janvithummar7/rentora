@@ -9,15 +9,22 @@ export type AdminListing = {
   category: string;
   description: string;
   size: string;
+  sizes: string[];
   color: string | null;
   brand: string | null;
-  condition: string;
+  condition: string | null;
   rent_price: number;
   security_deposit: number;
-  location: string;
-  city: string;
+  location: string | null;
+  city: string | null;
   available_from: string | null;
   available_to: string | null;
+  available_dates: string[];
+  for_sale: boolean;
+  sale_price: number | null;
+  owner_rent_price: number;
+  owner_sale_price: number | null;
+  margin_percent: number;
   status: string;
   is_seed: boolean;
   created_at: string;
@@ -64,6 +71,9 @@ export type AdminRequest = {
   listing: {
     id: string;
     name: string;
+    rent_price: number;
+    owner_rent_price: number;
+    margin_percent: number;
     owner: { name: string; whatsapp_number: string };
   } | null;
 };
@@ -71,7 +81,9 @@ export type AdminRequest = {
 export async function getAdminRequests(status?: string): Promise<AdminRequest[]> {
   let q = getAdminClient()
     .from("rental_requests")
-    .select("*, listing:clothing_listings(id,name,owner:users!owner_id(name,whatsapp_number))")
+    .select(
+      "*, listing:clothing_listings(id,name,rent_price,owner_rent_price,margin_percent,owner:users!owner_id(name,whatsapp_number))",
+    )
     .order("created_at", { ascending: false });
   if (status && status !== "all") q = q.eq("status", status);
   const { data, error } = await q;
@@ -95,4 +107,16 @@ export async function getAdminCounts() {
     count("rental_requests"),
   ]);
   return { pendingListings, totalListings, newRequests, totalRequests };
+}
+
+/** Confirmed / completed orders for one listing: these occupy dates on the website. */
+export async function getBlockingRequests(listingId: string) {
+  const { data, error } = await getAdminClient()
+    .from("rental_requests")
+    .select("id,customer_name,start_date,end_date,status")
+    .eq("listing_id", listingId)
+    .in("status", ["confirmed", "completed"])
+    .order("start_date", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as { id: string; customer_name: string; start_date: string; end_date: string; status: string }[];
 }

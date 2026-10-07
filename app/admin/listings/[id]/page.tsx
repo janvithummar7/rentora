@@ -5,7 +5,8 @@ import { ListingActions } from "@/components/admin/ListingActions";
 import { ListingEditForm } from "@/components/admin/ListingEditForm";
 import { StatusBadge } from "@/components/admin/AdminBits";
 import { requireAdmin } from "@/lib/admin-auth";
-import { getAdminListing } from "@/lib/admin-data";
+import { getAdminListing, getBlockingRequests } from "@/lib/admin-data";
+import { formatDate } from "@/lib/utils";
 import { shortId } from "@/lib/utils";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -16,25 +17,28 @@ export default async function AdminListingPage({ params }: { params: Promise<{ i
   if (!UUID.test(id)) notFound();
   const l = await getAdminListing(id);
   if (!l) notFound();
+  const bookings = await getBlockingRequests(l.id);
 
   const defaults = {
     ownerName: l.owner.name,
     mobile: l.owner.mobile,
     whatsapp: l.owner.whatsapp_number,
     email: l.owner.email ?? "",
-    city: l.city,
-    area: l.owner.area ?? l.location.split(",")[0],
+    city: l.city ?? "",
+    area: l.owner.area ?? "",
     name: l.name,
     category: l.category,
     description: l.description,
-    size: l.size,
+    sizes: l.sizes?.length ? l.sizes : l.size ? [l.size] : [],
     color: l.color ?? "",
     brand: l.brand ?? "",
-    condition: l.condition,
-    rentPrice: l.rent_price,
+    condition: l.condition ?? "",
+    rentPrice: l.owner_rent_price,
     securityDeposit: l.security_deposit,
-    availableFrom: l.available_from ?? "",
-    availableTo: l.available_to ?? "",
+    marginPercent: Number(l.margin_percent),
+    forSale: l.for_sale,
+    salePrice: l.owner_sale_price,
+    availableDates: l.available_dates ?? [],
   };
 
   return (
@@ -56,8 +60,31 @@ export default async function AdminListingPage({ params }: { params: Promise<{ i
         ownerWhatsapp={l.owner.whatsapp_number}
         ownerName={l.owner.name}
         listingName={l.name}
+        ownerRent={l.owner_rent_price}
+        ownerSale={l.owner_sale_price}
+        margin={l.margin_percent}
         showEdit={false}
       />
+
+      <section className="card p-4 text-sm">
+        <h2 className="font-semibold">Booked dates</h2>
+        {bookings.length === 0 ? (
+          <p className="mt-1 text-muted">No confirmed or completed orders. All offered dates are open.</p>
+        ) : (
+          <ul className="mt-2 space-y-1">
+            {bookings.map((b) => (
+              <li key={b.id}>
+                <span className="font-medium">
+                  {formatDate(b.start_date)} – {formatDate(b.end_date)}
+                </span>{" "}
+                <span className="text-muted">
+                  · {b.customer_name} · {b.status}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <ul className="flex flex-wrap gap-3">
         {l.images.map((img) => (

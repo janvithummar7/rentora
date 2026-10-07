@@ -2,23 +2,23 @@
 
 import { useState } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
+import { RangePicker } from "@/components/DatePickers";
 import { Field, fieldProps, type Errors } from "@/components/Field";
 import { WhatsAppIcon } from "@/components/WhatsAppButton";
 import { fieldErrors, rentalRequestSchema } from "@/lib/validations";
-import { todayISO } from "@/lib/utils";
 
 type Props = {
   listingId: string;
   listingName: string;
-  availableFrom: string | null;
-  availableTo: string | null;
+  availableDates: string[];
+  bookedDates?: string[];
+  requestedDates?: string[];
   onClose?: () => void;
 };
 
-export function RentalRequestForm({ listingId, listingName, availableFrom, availableTo, onClose }: Props) {
-  const today = todayISO();
-  const minDate = availableFrom && availableFrom > today ? availableFrom : today;
+export function RentalRequestForm({ listingId, listingName, availableDates, bookedDates = [], requestedDates = [], onClose }: Props) {
   const [start, setStart] = useState("");
+  const [end, setEnd] = useState("");
   const [errors, setErrors] = useState<Errors>({});
   const [serverError, setServerError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -30,7 +30,7 @@ export function RentalRequestForm({ listingId, listingName, availableFrom, avail
     setServerError("");
     const form = e.currentTarget;
     const values = Object.fromEntries(new FormData(form).entries()) as Record<string, string>;
-    const payload = { ...values, listingId };
+    const payload = { ...values, listingId, startDate: start, endDate: end };
 
     const parsed = rentalRequestSchema.safeParse(payload);
     if (!parsed.success) {
@@ -70,9 +70,10 @@ export function RentalRequestForm({ listingId, listingName, availableFrom, avail
         <div>
           <h3 className="font-serif text-2xl font-semibold">Request sent!</h3>
           <p className="mt-2 text-sm text-muted">
-            Request sent successfully! You can now connect with the owner on WhatsApp.
+            Request sent successfully! Chat with our team on WhatsApp to confirm your rental and the final price.
           </p>
         </div>
+        {!whatsappUrl && <p className="text-sm text-muted">Our team will contact you on your mobile number shortly.</p>}
         {whatsappUrl && (
           <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="btn-wa btn-lg w-full">
             <WhatsAppIcon className="h-5 w-5" />
@@ -123,28 +124,23 @@ export function RentalRequestForm({ listingId, listingName, availableFrom, avail
         <input {...fieldProps("customerEmail", errors)} className="input" type="email" autoComplete="email" maxLength={120} placeholder="you@example.com" />
       </Field>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field name="startDate" label="Rental Start Date" errors={errors} required>
-          <input
-            {...fieldProps("startDate", errors)}
-            className="input"
-            type="date"
-            min={minDate}
-            max={availableTo ?? undefined}
-            value={start}
-            onChange={(e) => setStart(e.target.value)}
-          />
-        </Field>
-        <Field name="endDate" label="Rental End Date" errors={errors} required>
-          <input
-            {...fieldProps("endDate", errors)}
-            className="input"
-            type="date"
-            min={start || minDate}
-            max={availableTo ?? undefined}
-          />
-        </Field>
-      </div>
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">
+          Rental dates <span className="text-rose">*</span>
+        </legend>
+        <RangePicker
+          allowed={availableDates}
+          booked={bookedDates}
+          requested={requestedDates}
+          start={start}
+          end={end}
+          onChange={(s, e) => {
+            setStart(s);
+            setEnd(e);
+          }}
+          error={errors.startDate || errors.endDate}
+        />
+      </fieldset>
 
       <Field name="message" label="Message / Requirement" errors={errors}>
         <textarea
@@ -171,7 +167,7 @@ export function RentalRequestForm({ listingId, listingName, availableFrom, avail
         )}
       </button>
       <p className="text-center text-xs text-muted">
-        Your request is saved, then WhatsApp opens so you can chat with the owner.
+        Your request is saved, then WhatsApp opens so you can chat with our team.
       </p>
     </form>
   );

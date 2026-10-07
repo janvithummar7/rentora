@@ -1,4 +1,4 @@
-﻿-- Clothing rental marketplace: core schema
+-- Clothing rental marketplace: core schema
 create extension if not exists pgcrypto;
 
 create table if not exists public.categories (

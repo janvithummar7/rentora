@@ -53,8 +53,12 @@ export default async function AdminListingsPage({ searchParams }: { searchParams
                     {l.is_seed && <span className="rounded-full bg-gold-soft px-2 py-0.5 text-xs">seed</span>}
                   </div>
                   <p className="text-sm text-muted">
-                    {categoryName(l.category)} · Size {l.size} · {formatINR(l.rent_price)}/day · deposit{" "}
-                    {formatINR(l.security_deposit)} · {l.location}
+                    {categoryName(l.category)} · Size {l.size}{l.location ? ` · ${l.location}` : ""}
+                  </p>
+                  <p className="text-sm">
+                    Owner {formatINR(l.owner_rent_price)}/day → customers{" "}
+                    <span className="font-semibold">{formatINR(l.rent_price)}/day</span> ({Number(l.margin_percent)}% margin)
+                    {l.for_sale && l.sale_price ? ` · sale ${formatINR(l.owner_sale_price ?? 0)} → ${formatINR(l.sale_price)}` : ""}
                   </p>
                   <p className="text-sm">
                     Owner: {l.owner.name} · {l.owner.mobile}
@@ -66,6 +70,9 @@ export default async function AdminListingsPage({ searchParams }: { searchParams
                     ownerWhatsapp={l.owner.whatsapp_number}
                     ownerName={l.owner.name}
                     listingName={l.name}
+                    ownerRent={l.owner_rent_price}
+                    ownerSale={l.owner_sale_price}
+                    margin={l.margin_percent}
                   />
                 </div>
               </li>

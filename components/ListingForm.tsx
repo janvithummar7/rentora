@@ -3,13 +3,19 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { type Errors } from "@/components/Field";
+import { DatesPicker } from "@/components/DatePickers";
+import { Field, fieldProps, type Errors } from "@/components/Field";
 import { ImageUploader } from "@/components/ImageUploader";
-import { ListingFields } from "@/components/ListingFields";
-import { MAX_IMAGES } from "@/lib/categories";
+import { SellToggle } from "@/components/SellToggle";
+import { SizePicker } from "@/components/SizePicker";
+import { CATEGORIES, MAX_IMAGES } from "@/lib/categories";
 import { fieldErrors, listingSchema } from "@/lib/validations";
 
-export function ListingForm() {
+export function ListingForm({
+  defaults,
+}: {
+  defaults?: { ownerName?: string; whatsapp?: string; city?: string; area?: string };
+}) {
   const router = useRouter();
   const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<Errors>({});
@@ -29,10 +35,14 @@ export function ListingForm() {
     if (files.length === 0) errs.images = "Please add at least one photo.";
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
-      const firstKey = Object.keys(errs).find((k) => k !== "images") ?? "images";
+      const firstKey = Object.keys(errs)[0];
       const target = form.querySelector(`[name="${firstKey}"]`) as HTMLElement | null;
-      (target ?? document.getElementById("images-section"))?.scrollIntoView({ behavior: "smooth", block: "center" });
-      target?.focus({ preventScroll: true });
+      const isHidden = !target || target.getAttribute("type") === "hidden";
+      (isHidden ? document.getElementById(`${firstKey}-section`) : target)?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      if (!isHidden) target.focus({ preventScroll: true });
       return;
     }
     setErrors({});
@@ -49,7 +59,10 @@ export function ListingForm() {
         setServerError(data.error || "We couldn't upload your listing. Please try again.");
         return;
       }
-      router.push(`/post-your-clothes/success?ref=${encodeURIComponent(data.id)}`);
+      const qs = new URLSearchParams({ ref: data.id });
+      if (data.claimToken) qs.set("claim", data.claimToken);
+      if (data.forSale) qs.set("sale", "1");
+      router.push(`/post-your-clothes/success?${qs}`);
     } catch {
       setServerError("We couldn't upload your listing. Please check your connection and try again.");
     } finally {
@@ -58,7 +71,7 @@ export function ListingForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="space-y-8">
+    <form onSubmit={onSubmit} noValidate className="space-y-6">
       {/* Honeypot */}
       <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
         <label>
@@ -67,10 +80,92 @@ export function ListingForm() {
         </label>
       </div>
 
-      <ListingFields errors={errors} />
+      <div className="grid gap-5 sm:grid-cols-2">
+        <Field name="ownerName" label="Your name" errors={errors} required>
+          <input {...fieldProps("ownerName", errors)} defaultValue={defaults?.ownerName} className="input" autoComplete="name" maxLength={60} />
+        </Field>
+        <Field
+          name="whatsapp"
+          label="WhatsApp number"
+          errors={errors}
+          required
+          hint="Rental requests come to this number. It is never shown publicly."
+        >
+          <input
+            {...fieldProps("whatsapp", errors)}
+            defaultValue={defaults?.whatsapp}
+            className="input"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            maxLength={16}
+            placeholder="98765 43210"
+          />
+        </Field>
+        <Field name="city" label="City" errors={errors} required>
+          <input
+            {...fieldProps("city", errors)}
+            defaultValue={defaults?.city}
+            className="input"
+            autoComplete="address-level2"
+            maxLength={60}
+            placeholder="e.g. Ahmedabad"
+          />
+        </Field>
+        <Field name="area" label="Area" errors={errors} required hint="Shown to renters. Your phone number never is.">
+          <input
+            {...fieldProps("area", errors)}
+            defaultValue={defaults?.area}
+            className="input"
+            maxLength={80}
+            placeholder="e.g. Satellite"
+          />
+        </Field>
+        <Field name="category" label="Type" errors={errors} required>
+          <select {...fieldProps("category", errors)} defaultValue="" className="input">
+            <option value="" disabled>
+              Choli, Saree, Kurti…
+            </option>
+            {CATEGORIES.map((c) => (
+              <option key={c.slug} value={c.slug}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field name="rentPrice" label="Rent price (₹ per day)" errors={errors} required>
+          <input {...fieldProps("rentPrice", errors)} className="input" type="number" inputMode="numeric" min={1} step={1} placeholder="1500" />
+        </Field>
+      </div>
 
-      <fieldset id="images-section" className="space-y-3">
-        <legend className="mb-1 font-serif text-xl font-semibold">Photos</legend>
+      <fieldset id="sizes-section" className="space-y-2">
+        <legend className="text-sm font-medium">
+          Size <span className="text-rose">*</span>
+        </legend>
+        <SizePicker
+          name="sizes"
+          error={errors.sizes}
+          onChange={(s) => s.length && setErrors((prev) => ({ ...prev, sizes: undefined }))}
+        />
+      </fieldset>
+
+      <SellToggle errors={errors} />
+
+      <fieldset id="availableDates-section" className="space-y-2">
+        <legend className="text-sm font-medium">
+          Available dates <span className="text-rose">*</span>
+        </legend>
+        <DatesPicker
+          name="availableDates"
+          error={errors.availableDates}
+          onChange={(d) => d.length && setErrors((prev) => ({ ...prev, availableDates: undefined }))}
+        />
+      </fieldset>
+
+      <fieldset id="images-section" className="space-y-2">
+        <legend className="text-sm font-medium">
+          Photos <span className="text-rose">*</span>
+        </legend>
         <ImageUploader
           error={errors.images}
           onChange={(f) => {
@@ -86,7 +181,7 @@ export function ListingForm() {
         </p>
       )}
 
-      <button type="submit" disabled={submitting} className="btn-primary btn-lg w-full sm:w-auto">
+      <button type="submit" disabled={submitting} className="btn-primary btn-lg w-full">
         {submitting ? (
           <>
             <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> Uploading your listing…

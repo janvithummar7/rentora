@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/post-your-clothes", label: "Post Your Clothes" },
   { href: "/how-it-works", label: "How It Works" },
   { href: "/contact", label: "Contact" },
+  { href: "/account", label: "Owner account" },
 ];
 
 export function Footer() {
@@ -22,7 +23,7 @@ export function Footer() {
           </p>
           <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">
             A simple way to rent beautiful traditional and occasion wear, or earn from the outfits sitting unused in
-            your wardrobe. We connect renters and owners directly on WhatsApp.
+            your wardrobe. Our team coordinates every rental for you on WhatsApp.
           </p>
         </div>
         <nav aria-label="Footer">
@@ -61,7 +62,7 @@ export function Footer() {
         </nav>
       </div>
       <div className="container-page border-t border-sand-dark/60 py-5 text-xs text-muted">
-        © {new Date().getFullYear()} {SITE_NAME}. Rentals are agreed directly between renter and owner.
+        © {new Date().getFullYear()} {SITE_NAME}. Every rental is coordinated by our team.
       </div>
     </footer>
   );

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -51,6 +51,13 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <Link
+            href="/account"
+            aria-current={pathname.startsWith("/account") ? "page" : undefined}
+            className="hidden px-2 text-sm font-medium text-ink/80 hover:text-rose md:inline"
+          >
+            My account
+          </Link>
           {wa && (
             <a
               href={wa}
@@ -91,6 +98,9 @@ export function Header() {
                 {item.label}
               </Link>
             ))}
+            <Link href="/account" className="rounded-xl px-2 py-3 text-base font-medium">
+              My account
+            </Link>
             {wa && (
               <a href={wa} target="_blank" rel="noopener noreferrer" className="btn-wa mt-2">
                 <WhatsAppIcon className="h-5 w-5" />
