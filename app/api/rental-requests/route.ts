@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase";
-import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { clientIp, LIMITS_ENABLED, rateLimit } from "@/lib/rate-limit";
 import { fieldErrors, rentalRequestSchema } from "@/lib/validations";
 import { PLATFORM_WHATSAPP } from "@/lib/site";
 import { generateWhatsAppLink, rentalRequestMessage } from "@/lib/whatsapp";
@@ -13,10 +13,6 @@ const fail = (error: string, status: number, extra: Record<string, unknown> = {}
   NextResponse.json({ ok: false, error, ...extra }, { status });
 
 export async function POST(req: Request) {
-  if (!rateLimit(`rr:${clientIp(req.headers)}`, 10, 10 * 60_000)) {
-    return fail("Too many requests. Please wait a few minutes and try again.", 429);
-  }
-
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -35,6 +31,10 @@ export async function POST(req: Request) {
     return fail(Object.values(errors)[0] ?? "Please check the form.", 400, { fieldErrors: errors });
   }
   const input = parsed.data;
+
+  if (!rateLimit(`rr:${clientIp(req.headers)}`, 60, 10 * 60_000)) {
+    return fail("Too many requests from your network. Please wait a few minutes and try again.", 429);
+  }
 
   try {
     const db = getAdminClient();
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
       .eq("customer_mobile", input.customerMobile)
       .gte("created_at", since);
     if (countError) throw countError;
-    if ((count ?? 0) >= 5) {
+    if (LIMITS_ENABLED && (count ?? 0) >= 20) {
       return fail("You have sent several requests recently. Please wait a while before sending more.", 429);
     }
 

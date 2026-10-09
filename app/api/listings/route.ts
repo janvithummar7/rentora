@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getAdminClient, STORAGE_BUCKET } from "@/lib/supabase";
-import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { clientIp, LIMITS_ENABLED, rateLimit } from "@/lib/rate-limit";
 import { fieldErrors, listingSchema } from "@/lib/validations";
 import { getCurrentUser, newClaimToken } from "@/lib/account-auth";
 import { getDefaultMargin } from "@/lib/margin";
@@ -29,10 +29,6 @@ function sniffMime(b: Uint8Array): string | null {
 }
 
 export async function POST(req: Request) {
-  if (!rateLimit(`listing:${clientIp(req.headers)}`, 5, 60 * 60_000)) {
-    return fail("Too many submissions. Please try again later.", 429);
-  }
-
   let form: FormData;
   try {
     form = await req.formData();
@@ -70,6 +66,11 @@ export async function POST(req: Request) {
   }
   const input = parsed.data;
 
+  // Abuse limit counts only valid submissions (not typos), and is generous: many phones share one IP.
+  if (!rateLimit(`listing:${clientIp(req.headers)}`, 60, 60 * 60_000)) {
+    return fail("Too many submissions from your network. Please try again in a little while.", 429);
+  }
+
   const buffers: { buf: Buffer; mime: string }[] = [];
   for (const f of files) {
     const buf = Buffer.from(await f.arrayBuffer());
@@ -93,7 +94,7 @@ export async function POST(req: Request) {
       .eq("mobile", input.whatsapp)
       .gte("created_at", since);
     if (countError) throw countError;
-    if ((count ?? 0) >= 5) return fail("Too many listings from this number today. Please try again tomorrow.", 429);
+    if (LIMITS_ENABLED && (count ?? 0) >= 30) return fail("Too many listings from this number today. Please try again tomorrow.", 429);
 
     // Upload images: clothing-images/<listing-id>/image-N.ext
     const imageRows: { listing_id: string; image_url: string; is_primary: boolean }[] = [];

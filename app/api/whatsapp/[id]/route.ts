@@ -19,7 +19,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const buy = new URL(req.url).searchParams.get("intent") === "buy";
   const fallback = new URL(PLATFORM_WHATSAPP ? "/clothes" : "/contact", req.url);
 
-  if (!PLATFORM_WHATSAPP || !UUID.test(id) || !rateLimit(`wa:${clientIp(req.headers)}`, 30, 10 * 60_000)) {
+  if (!PLATFORM_WHATSAPP || !UUID.test(id) || !rateLimit(`wa:${clientIp(req.headers)}`, 200, 10 * 60_000)) {
     return NextResponse.redirect(fallback, 302);
   }
 
