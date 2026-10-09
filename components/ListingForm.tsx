@@ -136,6 +136,22 @@ export function ListingForm({
         <Field name="rentPrice" label="Rent price (₹ per day)" errors={errors} required>
           <input {...fieldProps("rentPrice", errors)} className="input" type="number" inputMode="numeric" min={1} step={1} placeholder="1500" />
         </Field>
+        <Field
+          name="securityDeposit"
+          label="Security deposit (₹)"
+          errors={errors}
+          hint="Refundable amount the renter pays upfront. Leave 0 if none."
+        >
+          <input
+            {...fieldProps("securityDeposit", errors)}
+            defaultValue={0}
+            className="input"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            step={1}
+          />
+        </Field>
       </div>
 
       <fieldset id="sizes-section" className="space-y-2">

@@ -153,7 +153,7 @@ export async function POST(req: Request) {
       owner_sale_price: ownerSale,
       margin_percent: margin,
       rent_price: prices.rent_price,
-      security_deposit: 0,
+      security_deposit: input.securityDeposit,
       for_sale: input.forSale,
       sale_price: prices.sale_price,
       available_dates: dates,

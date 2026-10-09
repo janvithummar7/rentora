@@ -4,7 +4,7 @@ import { MapPin } from "lucide-react";
 import { RentalRequestDialog } from "@/components/RentalRequestDialog";
 import { WhatsAppIcon } from "@/components/WhatsAppButton";
 import { categoryName } from "@/lib/categories";
-import { primaryImage, type PublicListing } from "@/lib/data";
+import { primaryImage, type PublicListing } from "@/lib/listing-types";
 import { availabilityLabel, upcoming } from "@/lib/dates";
 import { formatINR } from "@/lib/utils";
 
@@ -65,9 +65,9 @@ export function ClothingCard({ listing, priority = false }: { listing: PublicLis
           {listing.for_sale && listing.sale_price ? (
             <p className="text-xs font-medium text-[#7a5f2c]">Also for sale: {formatINR(listing.sale_price)}</p>
           ) : null}
-          {listing.security_deposit > 0 && (
-            <p className="text-xs text-muted">Security deposit {formatINR(listing.security_deposit)}</p>
-          )}
+          <p className="text-xs font-medium text-ink/80">
+            {listing.security_deposit > 0 ? `Deposit ${formatINR(listing.security_deposit)} (refundable)` : "No deposit"}
+          </p>
         </div>
 
         <div className="mt-auto flex flex-col gap-2 pt-2 min-[420px]:flex-row">
@@ -77,6 +77,8 @@ export function ClothingCard({ listing, priority = false }: { listing: PublicLis
             availableDates={listing.available_dates}
             bookedDates={listing.booked_dates}
             requestedDates={listing.requested_dates}
+            securityDeposit={listing.security_deposit}
+            rentPrice={listing.rent_price}
             label="Send Request"
             className="flex-1 !px-3"
           />

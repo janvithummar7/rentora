@@ -10,9 +10,9 @@ Flow: **list → discover → request → WhatsApp → rent**. No payments, no u
    `clothing-images` bucket. Either:
    - **CLI:** put your Postgres connection string in `.env` as `DATABASE_URL` (Supabase dashboard -> Connect ->
      *Session pooler* URI, with your database password filled in), then run `npm run db:migrate`
-     (and optionally `npm run db:seed` for sample data). Migrations are tracked and safe to re-run.
+     Migrations are tracked and safe to re-run.
    - **Or manually:** paste `supabase/migrations/20260101000000_init_schema.sql`, then
-     `20260101000100_rls_and_storage.sql`, then optionally `supabase/seed.sql` into the SQL Editor.
+     `20260101000100_rls_and_storage.sql`, then the remaining files in `supabase/migrations/` in order, in the SQL Editor.
 3. `cp .env.example .env.local` and fill it in:
 
    | Variable | Notes |
@@ -72,18 +72,6 @@ The site name lives in `lib/site.ts`.
   the browser before upload.
 - Owner sessions are refreshed by `middleware.ts` (only on /account, /post-your-clothes and /api/listings).
 - `/clothes/<slug>` (e.g. `/clothes/choli`) lists a category; `/clothes/<uuid>` is a listing page.
-
-## Seed data
-
-`supabase/seed.sql` adds 17 listings with fake owner numbers and local placeholder images. Every row has
-`is_seed = true`. Remove before launch:
-
-```sql
-delete from public.clothing_listings where is_seed;
-delete from public.users where is_seed;
-```
-
-To test WhatsApp with seed data, change a seed owner's `whatsapp_number` to your own 10-digit number.
 
 ## Notes
 

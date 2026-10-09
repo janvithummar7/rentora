@@ -17,6 +17,7 @@ export type OwnerEditDefaults = {
   description: string;
   sizes: string[];
   rentPrice: number;
+  securityDeposit: number;
   forSale: boolean;
   salePrice: number | null;
   availableDates: string[];
@@ -40,6 +41,16 @@ export function OwnerEditForm({ id, defaults }: { id: string; defaults: OwnerEdi
             type="number"
             inputMode="numeric"
             min={1}
+          />
+        </Field>
+        <Field name="securityDeposit" label="Security deposit (₹)" errors={errors} hint="Refundable. 0 if none.">
+          <input
+            {...fieldProps("securityDeposit", errors)}
+            defaultValue={defaults.securityDeposit}
+            className="input"
+            type="number"
+            inputMode="numeric"
+            min={0}
           />
         </Field>
         <Field name="city" label="City" errors={errors} required>

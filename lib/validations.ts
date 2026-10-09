@@ -86,6 +86,10 @@ export const rentalRequestSchema = z
     startDate: dateString("a start date"),
     endDate: dateString("an end date"),
     message: optionalText(500, true),
+    acceptTerms: z.preprocess(
+      (v) => v === true || v === "on" || v === "true" || v === "1",
+      z.boolean().refine((v) => v === true, { message: "Please tick the box to accept the deposit and damage terms." }),
+    ),
   })
   .superRefine((v, ctx) => {
     if (v.startDate < todayISO()) {
@@ -150,6 +154,7 @@ export const listingSchema = z
     category: categoryField,
     sizes: sizesField,
     rentPrice: money("the rent price", 1, 100000),
+    securityDeposit: z.preprocess((v) => (v === "" || v == null ? 0 : v), money("the security deposit (0 if none)", 0, 500000)),
     forSale: forSaleField,
     salePrice: salePriceField,
     availableDates,
@@ -172,6 +177,7 @@ export const ownerEditSchema = z
     description: optionalText(1000, true),
     sizes: sizesField,
     rentPrice: money("the rent price", 1, 100000),
+    securityDeposit: z.preprocess((v) => (v === "" || v == null ? 0 : v), money("the security deposit (0 if none)", 0, 500000)),
     forSale: forSaleField,
     salePrice: salePriceField,
     availableDates,

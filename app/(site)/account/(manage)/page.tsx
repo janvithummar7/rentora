@@ -63,6 +63,8 @@ function Row({ l }: { l: MyListing }) {
         </div>
         <p className="text-sm text-muted">
           {categoryName(l.category)} · Your price {formatINR(l.owner_rent_price)}/day
+          {" · Deposit "}
+          {l.security_deposit > 0 ? formatINR(l.security_deposit) : "none"}
           {l.for_sale && l.owner_sale_price ? ` · For sale ${formatINR(l.owner_sale_price)}` : ""}
         </p>
         <p className="text-sm text-muted">

@@ -1,4 +1,4 @@
-﻿export type Category = { slug: string; name: string };
+export type Category = { slug: string; name: string };
 
 export const CATEGORIES: Category[] = [
   { slug: "choli", name: "Choli" },
@@ -38,6 +38,15 @@ export const PRICE_RANGES = [
   { value: "1000-2000", label: "₹1,000 – ₹2,000" },
   { value: "2000-", label: "₹2,000 & above" },
 ];
+
+/** Browse sort order. Cheapest first is the default so every visitor sees affordable options first. */
+export const SORT_OPTIONS = [
+  { value: "price_asc", label: "Price: low to high" },
+  { value: "price_desc", label: "Price: high to low" },
+  { value: "newest", label: "Newest first" },
+] as const;
+export type SortKey = (typeof SORT_OPTIONS)[number]["value"];
+export const DEFAULT_SORT: SortKey = "price_asc";
 
 export const MAX_IMAGES = 5;
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;

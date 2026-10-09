@@ -41,7 +41,7 @@ export async function POST(req: Request) {
 
     const { data: listing, error: listingError } = await db
       .from("clothing_listings")
-      .select("id,name,status,available_dates,rent_price")
+      .select("id,name,status,available_dates,rent_price,security_deposit")
       .eq("id", input.listingId)
       .maybeSingle();
     if (listingError) throw listingError;
@@ -92,6 +92,8 @@ export async function POST(req: Request) {
         start_date: input.startDate,
         end_date: input.endDate,
         message: input.message ?? null,
+        deposit_amount: listing.security_deposit ?? 0,
+        deposit_terms_accepted: true,
       })
       .select("id")
       .single();
@@ -109,6 +111,7 @@ export async function POST(req: Request) {
             startDate: input.startDate,
             endDate: input.endDate,
             listedPrice: listing.rent_price,
+            deposit: listing.security_deposit ?? 0,
             note: input.message,
           }),
         )

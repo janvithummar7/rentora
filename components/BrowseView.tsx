@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { Search, SearchX } from "lucide-react";
 import { CategoryFilter } from "@/components/CategoryFilter";
-import { ClothingCard } from "@/components/ClothingCard";
-import { PRICE_RANGES, SIZES, categoryName } from "@/lib/categories";
-import { getListings, PAGE_SIZE } from "@/lib/data";
+import { BrowseGrid } from "@/components/BrowseGrid";
+import { DEFAULT_SORT, PRICE_RANGES, SIZES, SORT_OPTIONS, categoryName } from "@/lib/categories";
+import { getListings } from "@/lib/data";
 
-export type BrowseParams = { q?: string; city?: string; size?: string; price?: string; page?: string };
+export type BrowseParams = { q?: string; city?: string; size?: string; price?: string; sort?: string; page?: string };
 
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
 export function readParams(sp: Record<string, string | string[] | undefined>): BrowseParams {
-  return { q: first(sp.q), city: first(sp.city), size: first(sp.size), price: first(sp.price), page: first(sp.page) };
+  return { q: first(sp.q), city: first(sp.city), size: first(sp.size), price: first(sp.price), sort: first(sp.sort), page: first(sp.page) };
 }
 
 function toQuery(p: BrowseParams, extra: Record<string, string | undefined> = {}) {
@@ -21,7 +21,8 @@ function toQuery(p: BrowseParams, extra: Record<string, string | undefined> = {}
 
 export async function BrowseView({ category, params }: { category?: string; params: BrowseParams }) {
   const base = category ? `/clothes/${category}` : "/clothes";
-  const page = Math.max(1, Number(params.page) || 1);
+  const page = 1; // further pages are loaded in the browser by the "Show more" button
+  const gridQuery = toQuery({ ...params, page: undefined }, category ? { category } : {});
   const filterQuery = toQuery({ ...params, page: undefined });
   const hasFilters = Boolean(params.q || params.city || params.size || params.price);
 
@@ -34,13 +35,12 @@ export async function BrowseView({ category, params }: { category?: string; para
     failed = true;
   }
 
-  const totalPages = result ? Math.ceil(result.total / PAGE_SIZE) : 0;
 
   return (
     <div className="space-y-6">
       <CategoryFilter active={category} query={filterQuery} />
 
-      <form action={base} method="get" className="card grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-[2fr_1.5fr_1fr_1.2fr_auto]">
+      <form action={base} method="get" className="card grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-[2fr_1.5fr_1fr_1.2fr_1.3fr_auto]">
         <div>
           <label htmlFor="q" className="sr-only">
             Search
@@ -78,6 +78,18 @@ export async function BrowseView({ category, params }: { category?: string; para
             {PRICE_RANGES.map((r) => (
               <option key={r.value} value={r.value}>
                 {r.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="sort" className="sr-only">
+            Sort by
+          </label>
+          <select id="sort" name="sort" defaultValue={params.sort ?? DEFAULT_SORT} className="input">
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
               </option>
             ))}
           </select>
@@ -123,30 +135,7 @@ export async function BrowseView({ category, params }: { category?: string; para
             <p className="text-sm text-muted" aria-live="polite">
               {result.total} {result.total === 1 ? "outfit" : "outfits"} available
             </p>
-            <ul className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
-              {result.listings.map((l, i) => (
-                <li key={l.id} className="contents">
-                  <ClothingCard listing={l} priority={i < 4} />
-                </li>
-              ))}
-            </ul>
-            {totalPages > 1 && (
-              <nav aria-label="Pagination" className="flex items-center justify-center gap-3 pt-4">
-                {page > 1 && (
-                  <Link href={`${base}?${toQuery(params, { page: String(page - 1) })}`} className="btn-outline">
-                    Previous
-                  </Link>
-                )}
-                <span className="text-sm text-muted">
-                  Page {page} of {totalPages}
-                </span>
-                {page < totalPages && (
-                  <Link href={`${base}?${toQuery(params, { page: String(page + 1) })}`} className="btn-outline">
-                    Next
-                  </Link>
-                )}
-              </nav>
-            )}
+            <BrowseGrid key={gridQuery} initial={result.listings} total={result.total} query={gridQuery} />
           </>
         )
       )}

@@ -1,14 +1,13 @@
 // Applies SQL files to the Supabase Postgres database.
 //   npm run db:migrate   -> runs supabase/migrations/*.sql not yet applied (tracked in public.schema_migrations)
-//   npm run db:seed      -> runs supabase/seed.sql (sample data, is_seed = true)
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import pg from "pg";
 
 const command = process.argv[2];
 const url = process.env.DATABASE_URL;
-if (!["migrate", "seed"].includes(command)) {
-  console.error("Usage: node scripts/db.mjs <migrate|seed>");
+if (command !== "migrate") {
+  console.error("Usage: node scripts/db.mjs migrate");
   process.exit(1);
 }
 if (!url) {
@@ -36,7 +35,7 @@ async function runFile(file, label) {
 
 try {
   await client.connect();
-  if (command === "migrate") {
+  {
     await client.query(
       "create table if not exists public.schema_migrations (name text primary key, applied_at timestamptz not null default now())",
     );
@@ -54,9 +53,6 @@ try {
       ran++;
     }
     console.log(ran ? `Applied ${ran} migration(s).` : "Database is up to date.");
-  } else {
-    await runFile(join("supabase", "seed.sql"), "seed.sql");
-    console.log("Seed data loaded. Remove it before launch (see README).");
   }
 } catch (err) {
   console.error("Failed:", err.message);

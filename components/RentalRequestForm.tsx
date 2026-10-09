@@ -13,10 +13,13 @@ type Props = {
   availableDates: string[];
   bookedDates?: string[];
   requestedDates?: string[];
+  securityDeposit?: number;
+  rentPrice?: number;
   onClose?: () => void;
 };
 
-export function RentalRequestForm({ listingId, listingName, availableDates, bookedDates = [], requestedDates = [], onClose }: Props) {
+export function RentalRequestForm({ listingId, listingName, availableDates, bookedDates = [], requestedDates = [], securityDeposit = 0, rentPrice, onClose }: Props) {
+  const [agreed, setAgreed] = useState(false);
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [errors, setErrors] = useState<Errors>({});
@@ -94,6 +97,16 @@ export function RentalRequestForm({ listingId, listingName, availableDates, book
       <div className="rounded-2xl bg-rose-soft px-4 py-3 text-sm">
         <span className="text-muted">You are requesting:</span>
         <p className="font-semibold text-ink">{listingName}</p>
+        <p className="mt-1 text-xs text-ink/80">
+          {rentPrice ? `Rent ₹${rentPrice.toLocaleString("en-IN")} / day · ` : ""}
+          {securityDeposit > 0 ? (
+            <>
+              Security deposit <strong>₹{securityDeposit.toLocaleString("en-IN")}</strong> (refundable)
+            </>
+          ) : (
+            "No security deposit"
+          )}
+        </p>
       </div>
 
       {/* Honeypot: hidden from people, tempting for bots */}
@@ -151,13 +164,46 @@ export function RentalRequestForm({ listingId, listingName, availableDates, book
         />
       </Field>
 
+      <div className="rounded-2xl border border-gold/50 bg-gold-soft p-4">
+        <label className="flex cursor-pointer items-start gap-3 text-sm">
+          <input
+            type="checkbox"
+            name="acceptTerms"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            aria-invalid={errors.acceptTerms ? true : undefined}
+            aria-describedby={errors.acceptTerms ? "acceptTerms-error" : undefined}
+            className="mt-0.5 h-5 w-5 shrink-0 accent-[#a85d69]"
+          />
+          <span>
+            {securityDeposit > 0 ? (
+              <>
+                I agree to pay the refundable security deposit of{" "}
+                <strong>₹{securityDeposit.toLocaleString("en-IN")}</strong> when my booking is accepted. I understand
+                that <strong>if the outfit is damaged or broken, the deposit will not be returned</strong>.
+              </>
+            ) : (
+              <>
+                I understand that I am responsible for the outfit while I have it, and{" "}
+                <strong>if it is damaged or broken I may have to pay for it</strong>.
+              </>
+            )}
+          </span>
+        </label>
+        {errors.acceptTerms && (
+          <p id="acceptTerms-error" role="alert" className="mt-2 text-sm text-red-600">
+            {errors.acceptTerms}
+          </p>
+        )}
+      </div>
+
       {serverError && (
         <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
           {serverError}
         </p>
       )}
 
-      <button type="submit" disabled={submitting} className="btn-primary btn-lg w-full">
+      <button type="submit" disabled={submitting || !agreed} className="btn-primary btn-lg w-full">
         {submitting ? (
           <>
             <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> Sending…
@@ -167,7 +213,7 @@ export function RentalRequestForm({ listingId, listingName, availableDates, book
         )}
       </button>
       <p className="text-center text-xs text-muted">
-        Your request is saved, then WhatsApp opens so you can chat with our team.
+        {agreed ? "Your request is saved, then WhatsApp opens so you can chat with our team." : "Tick the box above to send your request."}
       </p>
     </form>
   );

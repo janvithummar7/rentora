@@ -11,6 +11,8 @@ type Props = {
   availableDates: string[];
   bookedDates?: string[];
   requestedDates?: string[];
+  securityDeposit?: number;
+  rentPrice?: number;
   label?: string;
   className?: string;
 };

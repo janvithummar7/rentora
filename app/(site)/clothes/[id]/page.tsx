@@ -153,6 +153,12 @@ export default async function ClothesDetailOrCategory({
                 ? `Refundable security deposit: ${formatINR(listing.security_deposit)}`
                 : "No security deposit"}
             </p>
+            {listing.security_deposit > 0 && (
+              <p className="mt-1 text-xs text-muted">
+                Paid when your booking is accepted. Returned after you give the outfit back, but not if it is damaged or
+                broken.
+              </p>
+            )}
             <p className="mt-2 text-sm font-medium text-wa">{availability}</p>
             {requestedDays.length > 0 && (
               <p className="mt-1 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900">
@@ -170,6 +176,8 @@ export default async function ClothesDetailOrCategory({
                 availableDates={listing.available_dates}
                 bookedDates={listing.booked_dates}
                 requestedDates={listing.requested_dates}
+                securityDeposit={listing.security_deposit}
+                rentPrice={listing.rent_price}
                 className="btn-lg flex-1"
               />
               <a

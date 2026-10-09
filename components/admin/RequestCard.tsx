@@ -73,6 +73,20 @@ export function RequestCard({ r }: { r: AdminRequest }) {
         </p>
       )}
 
+      <p className="rounded-xl bg-amber-50 px-4 py-2 text-sm">
+        {r.deposit_amount > 0 ? (
+          <>
+            Security deposit to collect: <span className="font-semibold">{formatINR(r.deposit_amount)}</span>
+          </>
+        ) : (
+          "No security deposit"
+        )}
+        {" · "}
+        {r.deposit_terms_accepted
+          ? "Renter accepted the deposit / damage terms"
+          : "Terms were not recorded (older request)"}
+      </p>
+
       <div className="space-y-1">
         <RequestStatusControls id={r.id} status={r.status} />
         <p className="text-xs text-muted">

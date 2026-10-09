@@ -57,7 +57,7 @@ export default async function AdminListingsPage({ searchParams }: { searchParams
                   </p>
                   <p className="text-sm">
                     Owner {formatINR(l.owner_rent_price)}/day → customers{" "}
-                    <span className="font-semibold">{formatINR(l.rent_price)}/day</span> ({Number(l.margin_percent)}% margin)
+                    <span className="font-semibold">{formatINR(l.rent_price)}/day</span> ({Number(l.margin_percent)}% margin) · deposit {l.security_deposit > 0 ? formatINR(l.security_deposit) : "none"}
                     {l.for_sale && l.sale_price ? ` · sale ${formatINR(l.owner_sale_price ?? 0)} → ${formatINR(l.sale_price)}` : ""}
                   </p>
                   <p className="text-sm">

@@ -66,6 +66,8 @@ export type AdminRequest = {
   start_date: string;
   end_date: string;
   message: string | null;
+  deposit_amount: number;
+  deposit_terms_accepted: boolean;
   status: string;
   created_at: string;
   listing: {

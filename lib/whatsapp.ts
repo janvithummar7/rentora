@@ -1,4 +1,4 @@
-﻿import { PLATFORM_WHATSAPP, SITE_NAME } from "@/lib/site";
+import { PLATFORM_WHATSAPP, SITE_NAME } from "@/lib/site";
 import { formatDate } from "@/lib/utils";
 
 /**
@@ -32,6 +32,7 @@ export function rentalRequestMessage(p: {
   startDate: string;
   endDate: string;
   listedPrice?: number | null;
+  deposit?: number | null;
   note?: string | null;
 }): string {
   const lines = [
@@ -42,6 +43,11 @@ export function rentalRequestMessage(p: {
     `Rental Date: ${formatDate(p.startDate)} to ${formatDate(p.endDate)}`,
   ];
   if (p.listedPrice) lines.push(`Listed price: ₹${p.listedPrice.toLocaleString("en-IN")} / day`);
+  if (p.deposit && p.deposit > 0) {
+    lines.push(`Security deposit: ₹${p.deposit.toLocaleString("en-IN")} (accepted: refundable, not returned if the outfit is damaged or broken)`);
+  } else {
+    lines.push("Accepted: I am responsible for any damage to the outfit.");
+  }
   if (p.note) lines.push(`Note: ${p.note}`);
   lines.push("", "Please confirm availability and the total price.");
   return lines.join("\n");

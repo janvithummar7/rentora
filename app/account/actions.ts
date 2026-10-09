@@ -157,6 +157,7 @@ export async function ownerUpdateListing(_prev: EditState, formData: FormData): 
       city: v.city,
       size: v.sizes.join(", "),
       sizes: v.sizes,
+      security_deposit: v.securityDeposit,
       owner_rent_price: v.rentPrice,
       owner_sale_price: v.forSale ? (v.salePrice ?? null) : null,
       ...listingPrices(v.rentPrice, v.forSale ? (v.salePrice ?? null) : null, Number(state.margin_percent)),

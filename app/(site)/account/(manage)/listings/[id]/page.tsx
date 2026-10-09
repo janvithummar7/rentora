@@ -49,6 +49,7 @@ export default async function EditMyListingPage({ params }: { params: Promise<{ 
             description: l.description ?? "",
             sizes: l.sizes?.length ? l.sizes : l.size ? [l.size] : [],
             rentPrice: l.owner_rent_price,
+            securityDeposit: l.security_deposit,
             forSale: l.for_sale,
             salePrice: l.owner_sale_price,
             availableDates: l.available_dates ?? [],

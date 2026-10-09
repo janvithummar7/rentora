@@ -2,36 +2,9 @@ import "server-only";
 import { getPublicClient } from "@/lib/supabase";
 import { parseRange, todayISO } from "@/lib/utils";
 
-export type ListingImage = { id: string; image_url: string; is_primary: boolean };
-
-export type PublicListing = {
-  id: string;
-  name: string;
-  category: string;
-  description: string;
-  size: string;
-  sizes: string[];
-  color: string | null;
-  brand: string | null;
-  condition: string | null;
-  rent_price: number;
-  security_deposit: number;
-  location: string | null;
-  city: string | null;
-  available_from: string | null;
-  available_to: string | null;
-  /** Days the owner offered that are still free (booked days removed). */
-  available_dates: string[];
-  /** Days the owner offered that are already booked (confirmed/completed orders). Shown as occupied. */
-  booked_dates: string[];
-  /** Free days that other renters have requested but that are not confirmed yet. Still requestable. */
-  requested_dates: string[];
-  for_sale: boolean;
-  sale_price: number | null;
-  created_at: string;
-  owner_name: string;
-  images: ListingImage[];
-};
+import type { ListingImage, PublicListing } from "@/lib/listing-types";
+export type { ListingImage, PublicListing };
+export { primaryImage } from "@/lib/listing-types";
 
 export type ListingFilters = {
   category?: string;
@@ -39,6 +12,7 @@ export type ListingFilters = {
   city?: string;
   size?: string;
   price?: string;
+  sort?: string;
   page?: number;
 };
 
@@ -138,8 +112,12 @@ export async function getListings(filters: ListingFilters = {}): Promise<{ listi
     .select(COLUMNS, { count: "exact" })
     // hide listings whose availability window has passed
     .or(`available_to.is.null,available_to.gte.${todayISO()}`)
-    .order("created_at", { ascending: false })
     .range(from, from + PAGE_SIZE - 1);
+
+  // Cheapest first by default; ties (and the "newest" option) fall back to the most recent listing.
+  const sort = filters.sort === "price_desc" || filters.sort === "newest" ? filters.sort : "price_asc";
+  if (sort === "newest") query = query.order("created_at", { ascending: false });
+  else query = query.order("rent_price", { ascending: sort === "price_asc" }).order("created_at", { ascending: false });
 
   if (filters.category && filters.category !== "all") query = query.eq("category", filters.category);
   // sizes is an array column: match listings that offer this size (among others)
@@ -170,6 +148,7 @@ export async function getFeaturedListings(limit = 8): Promise<PublicListing[]> {
     .from("public_listings")
     .select(COLUMNS)
     .or(`available_to.is.null,available_to.gte.${todayISO()}`)
+    .order("rent_price", { ascending: true })
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw error;
@@ -187,6 +166,3 @@ export async function getListing(id: string): Promise<PublicListing | null> {
   return withImages;
 }
 
-export function primaryImage(listing: Pick<PublicListing, "images">): string | null {
-  return (listing.images.find((i) => i.is_primary) ?? listing.images[0])?.image_url ?? null;
-}
